@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鍋巴農場 - 水蜜桃訂購表單</title>
+    <style>
+        body { font-family: "Glow Sans TC", "未來熒黑", "PingFang TC", sans-serif; background-color: #fff5f5; padding: 15px; }
+        .container { max-width: 500px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
+        
+        /* 標題套用未來熒黑 */
+        h2 { color: #d63384; text-align: center; margin-bottom: 20px; font-family: "Glow Sans TC", "未來熒黑", sans-serif; font-weight: 700; }
+        
+        .item-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #ffe3e3; }
+        
+        /* 確保品項與價格分行的結構 */
+        .item-info { display: flex; flex-direction: column; gap: 4px; }
+        .item-name { font-weight: bold; color: #333; }
+        .item-price { color: #d63384; font-size: 0.9em; display: block; }
+        
+        .qty-input { width: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 5px; text-align: center; font-size: 16px; }
+        
+        .summary-box { background: #fffaf0; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffecb3; }
+        .summary-line { display: flex; justify-content: space-between; margin-bottom: 8px; color: #666; }
+        .total-line { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ff6b6b; font-size: 1.3em; color: #e44d26; font-weight: bold; }
+        .warning { color: #dc3545; font-weight: bold; font-size: 0.9em; display: none; margin-top: 5px; }
+        
+        input[type="text"], input[type="tel"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 15px; }
+        
+        /* LINE按鈕顏色與骨架保持一致 */
+        button { width: 100%; background-color: #06C755; color: white; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .shipping-hint { font-size: 0.85em; color: #888; margin-top: 10px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>鍋巴農場 <br>水蜜桃訂購表單</h2>
+
+    <div id="product-list">
+        <div class="item-row">
+            <div class="item-info">
+                <span class="item-name">6 粒裝</span>
+                <span class="item-price">$900 / 盒</span>
+            </div>
+            <input type="number" class="qty-input" data-price="900" data-name="6粒裝" value="0" min="0" oninput="calculate()">
+        </div>
+        <div class="item-row">
+            <div class="item-info">
+                <span class="item-name">8 粒裝</span>
+                <span class="item-price">$800 / 盒</span>
+            </div>
+            <input type="number" class="qty-input" data-price="800" data-name="8粒裝" value="0" min="0" oninput="calculate()">
+        </div>
+        <div class="item-row">
+            <div class="item-info">
+                <span class="item-name">10 粒裝</span>
+                <span class="item-price">$700 / 盒</span>
+            </div>
+            <input type="number" class="qty-input" data-price="700" data-name="10粒裝" value="0" min="0" oninput="calculate()">
+        </div>
+        <div class="item-row">
+            <div class="item-info">
+                <span class="item-name">12 粒裝</span>
+                <span class="item-price">$600 / 盒</span>
+            </div>
+            <input type="number" class="qty-input" data-price="600" data-name="12粒裝" value="0" min="0" oninput="calculate()">
+        </div>
+    </div>
+
+    <div class="summary-box">
+        <div class="summary-line"><span>總盒數：</span><span><span id="totalQty">0</span> 盒</span></div>
+        <div id="overLimitWarning" class="warning">⚠️ 單筆訂單上限為 6 盒，超過請分開下單。</div>
+        <div class="summary-line"><span>商品小計：</span><span>$ <span id="subtotal">0</span></span></div>
+        <div class="summary-line"><span>運費：</span><span>$ <span id="shipping">0</span></span></div>
+        <div class="total-line"><span>總金額：</span><span>NT$ <span id="grandTotal">0</span></span></div>
+        <div class="shipping-hint">
+            <strong>【運費說明】</strong><br>
+            • 1 盒：$160 / 2-3 盒：$225 / 4-6 盒：$340<br>
+            • 單筆上限 6 盒，超過請分次訂購。
+        </div>
+    </div>
+
+    <form id="orderForm">
+        <label>收件人姓名</label>
+        <input type="text" id="name" placeholder="請填寫收件人" required>
+        <label>聯絡電話</label>
+        <input type="tel" id="phone" placeholder="請填寫 10 位電話" required>
+        <label>配送地址</label>
+        <input type="text" id="address" placeholder="請填寫收件地址" required>
+        <button type="button" onclick="sendToLine()">透過 LINE 送出訂單</button>
+    </form>
+</div>
+
+<script>
+    function calculate() {
+        let subtotal = 0, totalQty = 0, shipping = 0;
+        document.querySelectorAll('.qty-input').forEach(input => {
+            let qty = parseInt(input.value) || 0;
+            subtotal += parseInt(input.getAttribute('data-price')) * qty;
+            totalQty += qty;
+        });
+
+        const warning = document.getElementById('overLimitWarning');
+        if (totalQty === 1) { shipping = 160; warning.style.display = 'none'; }
+        else if (totalQty >= 2 && totalQty <= 3) { shipping = 225; warning.style.display = 'none'; }
+        else if (totalQty >= 4 && totalQty <= 6) { shipping = 340; warning.style.display = 'none'; }
+        else if (totalQty > 6) { shipping = 0; warning.style.display = 'block'; }
+        else { shipping = 0; warning.style.display = 'none'; }
+
+        document.getElementById('subtotal').innerText = subtotal.toLocaleString();
+        document.getElementById('totalQty').innerText = totalQty;
+        document.getElementById('shipping').innerText = shipping.toLocaleString();
+        document.getElementById('grandTotal').innerText = (subtotal + shipping).toLocaleString();
+    }
+
+    function sendToLine() {
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value.replace(/\s+/g, '');
+        const address = document.getElementById('address').value;
+        const total = document.getElementById('grandTotal').innerText;
+        const totalQty = parseInt(document.getElementById('totalQty').innerText);
+
+        const lineID = "@536toymx"; 
+
+        if (totalQty === 0) { alert("請先選擇訂購數量！"); return; }
+        if (totalQty > 6) { alert("抱歉！單筆訂單最多只能寄送 6 盒。\n超過 6 盒請分為兩筆訂單填寫，謝謝您！"); return; }
+        if (!name || !phone || !address) { alert("請完整填寫收件人資訊！"); return; }
+        
+        // 10位電話長度檢查
+        if (phone.length < 10) { alert("電話號碼不足 10 位，請重新檢查！"); return; }
+
+        let details = "";
+        document.querySelectorAll('.qty-input').forEach(input => {
+            let qty = parseInt(input.value) || 0;
+            if (qty > 0) details += `\n- ${input.getAttribute('data-name')}：${qty} 盒`;
+        });
+
+        const msg = `【鍋巴農場 新訂單】\n收件人：${name}\n電話：${phone}\n地址：${address}\n---訂購項目---${details}\n-----------\n總計：NT$ ${total}`;
+        const lineUrl = `https://line.me/R/oaMessage/${lineID}/?${encodeURIComponent(msg)}`;
+        window.location.href = lineUrl;
+    }
+</script>
+
+</body>
+</html>
